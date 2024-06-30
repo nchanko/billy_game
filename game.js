@@ -5,7 +5,7 @@ let player, obstacles, coins, frame, gameSpeed, gameOver, obstacleFrequency, pau
 let level = 1;
 let backgroundLayers = [];
 let obstacleImages = [];
-let magnetImage; // Add this line near the other image declarations
+let magnetImage;
 
 function loadImages() {
     // Load background layers
@@ -25,8 +25,8 @@ function loadImages() {
     coinImage.src = 'assets/coin.png';
 
     // Load magnet
-    magnetImage = new Image(); // Add this line
-    magnetImage.src = 'assets/magnet.png'; // Add this line
+    magnetImage = new Image();
+    magnetImage.src = 'assets/magnet.png';
 
     // Load obstacle images
     const obstacleImageSources = ['assets/rock.png', 'assets/log.png', 'assets/bush.png'];
@@ -40,7 +40,7 @@ function loadImages() {
         ...backgroundLayers.map(layer => layer.image.decode()),
         character.decode(),
         coinImage.decode(),
-        magnetImage.decode(), // Add this line
+        magnetImage.decode(),
         ...obstacleImages.map(img => img.decode())
     ]).then(() => {
         init();
@@ -134,7 +134,6 @@ function createCoin() {
     } while (colliding);
 }
 
-
 function drawObstacles() {
     obstacles = obstacles.filter(obstacle => {
         ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
@@ -142,6 +141,7 @@ function drawObstacles() {
         return obstacle.y < canvas.height;
     });
 }
+
 function drawCoins() {
     coins = coins.filter(coin => {
         if (coin.isMagnet) {
@@ -161,7 +161,6 @@ function activateMagnet() {
     magnetActive = true;
     magnetTimer = 300; // 300 frames = 5 seconds at 60 FPS
 }
-
 
 function drawScore() {
     ctx.fillStyle = 'white';
@@ -243,7 +242,6 @@ function detectCollision() {
     });
 }
 
-
 function updateLevel() {
     level = Math.floor(distance / 1000) + 1;
     obstacleFrequency = Math.max(120 - (level * 10), 60);
@@ -267,7 +265,7 @@ function update() {
 
         // Save the score when the game is over
         const playerName = prompt('Enter your name:');
-        saveScore(playerName, score); // Fixed the saveScore call
+        saveScore(playerName, score);
         return;
     }
 
@@ -316,8 +314,6 @@ function update() {
     requestAnimationFrame(update);
 }
 
-
-
 function moveLeft() {
     player.dx = -player.speed;
 }
@@ -332,6 +328,7 @@ function jump() {
         player.dy = player.jumpStrength;
     }
 }
+
 function keyDown(e) {
     if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
     else if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
