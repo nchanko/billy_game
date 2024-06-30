@@ -352,7 +352,6 @@ function update() {
     requestAnimationFrame(update);
 }
 
-
 function moveLeft() {
     player.dx = -player.speed;
 }
@@ -397,31 +396,52 @@ document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
 canvas.addEventListener('click', togglePause);
 
-canvas.addEventListener('touchstart', handleTouch);
-canvas.addEventListener('touchend', handleTouchEnd);
+canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
+// Replace or update these functions
 let touchStartX = 0;
+let touchStartY = 0;
+let isTouching = false;
 
-function handleTouch(e) {
+function handleTouchStart(e) {
     e.preventDefault();
-    touchStartX = e.touches[0].clientX;
-    jump();
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    isTouching = true;
+
+    // Check if touch is on pause button
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
+        togglePause();
+    } else {
+        jump();
+    }
 }
 
-function handleTouchEnd(e) {
+function handleTouchMove(e) {
     e.preventDefault();
-    const touchEndX = e.changedTouches[0].clientX;
-    const diffX = touchEndX - touchStartX;
+    if (!isTouching) return;
+
+    const touch = e.touches[0];
+    const diffX = touch.clientX - touchStartX;
 
     if (diffX > 50) {
         moveRight();
     } else if (diffX < -50) {
         moveLeft();
     }
-
-    player.dx = 0;
 }
 
+function handleTouchEnd(e) {
+    e.preventDefault();
+    isTouching = false;
+    player.dx = 0;
+}
 loadImages();
 
 window.addEventListener('resize', () => {
