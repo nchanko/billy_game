@@ -1,11 +1,13 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-let player, obstacles, coins, frame, gameSpeed, gameOver, obstacleFrequency, paused, score, distance, coinImage;
+let player, obstacles, coins, frame, gameSpeed, gameOver, obstacleFrequency, paused, score, distance, coinImage, magnetImage;
 let level = 1;
 let backgroundLayers = [];
 let obstacleImages = [];
-let magnetImage;
+let magnetActive = false;
+let magnetTimer = 0;
+let baseGameSpeed = 3;
 
 function loadImages() {
     // Load background layers
@@ -69,13 +71,16 @@ function init() {
     obstacles = [];
     coins = [];
     frame = 0;
-    gameSpeed = 3;
-    obstacleFrequency = 100;
+    baseGameSpeed = 3;
+    gameSpeed = baseGameSpeed;
+    obstacleFrequency = 120;
     gameOver = false;
     paused = false;
     score = 0;
     distance = 0;
     level = 1;
+    magnetActive = false;
+    magnetTimer = 0;
 
     update();
 }
@@ -104,16 +109,13 @@ function createCoin() {
     let x, y;
     let colliding;
     let isVertical = Math.random() < 0.3; // 30% chance of vertical arrangement
-    let isMagnet = Math.random() < 0.1; // 10% chance of spawning a magnet
 
     do {
         colliding = false;
         x = Math.random() * (canvas.width - size);
         y = -size;
 
-        if (isMagnet) {
-            coins.push({ x, y, size, isMagnet: true });
-        } else if (isVertical) {
+        if (isVertical) {
             for (let i = 0; i < 3; i++) {
                 coins.push({ x, y: y - i * size, size, isMagnet: false });
             }
@@ -134,6 +136,40 @@ function createCoin() {
     } while (colliding);
 }
 
+function createMagnet() {
+    const size = 50;
+    let x, y;
+    let colliding;
+
+    do {
+        colliding = false;
+        x = Math.random() * (canvas.width - size);
+        y = -size;
+
+        // Check collision with obstacles and coins
+        for (let obstacle of obstacles) {
+            if (x < obstacle.x + obstacle.width &&
+                x + size > obstacle.x &&
+                y < obstacle.y + obstacle.height &&
+                y + size > obstacle.y) {
+                colliding = true;
+                break;
+            }
+        }
+        for (let coin of coins) {
+            if (x < coin.x + coin.size &&
+                x + size > coin.x &&
+                y < coin.y + coin.size &&
+                y + size > coin.y) {
+                colliding = true;
+                break;
+            }
+        }
+    } while (colliding);
+
+    coins.push({ x, y, size, isMagnet: true });
+}
+
 function drawObstacles() {
     obstacles = obstacles.filter(obstacle => {
         ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
@@ -152,14 +188,6 @@ function drawCoins() {
         coin.y += gameSpeed;
         return coin.y < canvas.height;
     });
-}
-
-let magnetActive = false;
-let magnetTimer = 0;
-
-function activateMagnet() {
-    magnetActive = true;
-    magnetTimer = 300; // 300 frames = 5 seconds at 60 FPS
 }
 
 function drawScore() {
@@ -203,6 +231,13 @@ function newPos() {
     else if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 }
 
+function jump() {
+    if (!player.isJumping) {
+        player.isJumping = true;
+        player.dy = player.jumpStrength;
+    }
+}
+
 function detectCollision() {
     const playerHitbox = {
         x: player.x + player.width * 0.2,
@@ -232,7 +267,8 @@ function detectCollision() {
             playerHitbox.y + playerHitbox.height > coin.y
         ) {
             if (coin.isMagnet) {
-                activateMagnet();
+                magnetActive = true;
+                magnetTimer = 600; // 10 seconds (60 fps * 10)
             } else {
                 score += 10;
             }
@@ -244,8 +280,9 @@ function detectCollision() {
 
 function updateLevel() {
     level = Math.floor(distance / 1000) + 1;
-    obstacleFrequency = Math.max(120 - (level * 10), 60);
-    gameSpeed = 3 + (level * 0.5);
+    obstacleFrequency = Math.max(120 - (level * 5), 60);
+    baseGameSpeed = 3 + (level * 0.2);
+    gameSpeed = magnetActive ? baseGameSpeed * 1.5 : baseGameSpeed;
 }
 
 function update() {
@@ -256,16 +293,12 @@ function update() {
         ctx.font = '30px Arial';
         ctx.fillText('Game Over', canvas.width / 2 - 70, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 80, canvas.height / 2);
-
+        
         ctx.fillStyle = 'green';
         ctx.fillRect(canvas.width / 2 - 60, canvas.height / 2 + 20, 120, 40);
         ctx.fillStyle = 'white';
         ctx.font = '20px Arial';
         ctx.fillText('Restart', canvas.width / 2 - 30, canvas.height / 2 + 45);
-
-        // Save the score when the game is over
-        const playerName = prompt('Enter your name:');
-        saveScore(playerName, score);
         return;
     }
 
@@ -278,24 +311,6 @@ function update() {
         newPos();
         detectCollision();
 
-        if (magnetActive) {
-            coins.forEach(coin => {
-                const dx = player.x + player.width / 2 - coin.x - coin.size / 2;
-                const dy = player.y + player.height / 2 - coin.y - coin.size / 2;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const force = 5; // Adjust this value as needed
-
-                if (distance < 200) { // Adjust this value as needed
-                    coin.x += dx / distance * force;
-                    coin.y += dy / distance * force;
-                }
-            });
-            magnetTimer--;
-            if (magnetTimer <= 0) {
-                magnetActive = false;
-            }
-        }
-
         frame++;
         updateLevel();
 
@@ -305,8 +320,33 @@ function update() {
         if (frame % 60 === 0) {
             createCoin();
         }
+        if (frame % 600 === 0) { // Create magnet every 10 seconds
+            createMagnet();
+        }
 
         distance += gameSpeed / 10;
+
+        if (magnetActive) {
+            magnetTimer--;
+            if (magnetTimer <= 0) {
+                magnetActive = false;
+                gameSpeed = baseGameSpeed;
+            } else {
+                // Attract nearby coins
+                coins.forEach(coin => {
+                    if (!coin.isMagnet) {
+                        const dx = player.x - coin.x;
+                        const dy = player.y - coin.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < 200) {
+                            coin.x += dx * 0.1;
+                            coin.y += dy * 0.1;
+                        }
+                    }
+                });
+            }
+        }
+
         drawScore();
     }
 
@@ -320,13 +360,6 @@ function moveLeft() {
 
 function moveRight() {
     player.dx = player.speed;
-}
-
-function jump() {
-    if (!player.isJumping) {
-        player.isJumping = true;
-        player.dy = player.jumpStrength;
-    }
 }
 
 function keyDown(e) {
@@ -347,76 +380,59 @@ function keyUp(e) {
     }
 }
 
-function togglePause(e) {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
-        paused = !paused;
-    } else if (gameOver && 
-               x > canvas.width / 2 - 60 && x < canvas.width / 2 + 60 &&
-               y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
-        init();
-    }
+function togglePause() {
+    paused = !paused;
 }
 
-document.addEventListener('keydown', keyDown);
-document.addEventListener('keyup', keyUp);
-canvas.addEventListener('click', togglePause);
-
-canvas.addEventListener('touchstart', handleTouchStart);
-canvas.addEventListener('touchend', handleTouchEnd);
-
+// Touch controls
 let touchStartX = 0;
 let touchStartY = 0;
+let isTouching = false;
 
 function handleTouchStart(e) {
     e.preventDefault();
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    isTouching = true;
+
+    // Check if touch is on pause button
+    const rect = canvas.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
+        togglePause();
+    } else {
+        jump();
+    }
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+    if (!isTouching) return;
+
+    const touch = e.touches[0];
+    const diffX = touch.clientX - touchStartX;
+
+    if (diffX > 50) {
+        moveRight();
+    } else if (diffX < -50) {
+        moveLeft();
+    }
 }
 
 function handleTouchEnd(e) {
     e.preventDefault();
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const diffX = touchEndX - touchStartX;
-    const diffY = touchEndY - touchStartY;
-
-    const absDiffX = Math.abs(diffX);
-    const absDiffY = Math.abs(diffY);
-
-    if (absDiffX > absDiffY) {
-        // Horizontal swipe
-        if (diffX > 50) {
-            moveRight();
-        } else if (diffX < -50) {
-            moveLeft();
-        }
-    } else {
-        // Vertical swipe
-        if (diffY < -50) {
-            jump();
-        }
-    }
-
-    // Single tap for pausing the game
-    if (absDiffX < 10 && absDiffY < 10) {
-        const rect = canvas.getBoundingClientRect();
-        const x = touchStartX - rect.left;
-        const y = touchStartY - rect.top;
-        if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
-            paused = !paused;
-        } else if (gameOver && 
-                   x > canvas.width / 2 - 60 && x < canvas.width / 2 + 60 &&
-                   y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
-            init();
-        }
-    }
-
+    isTouching = false;
     player.dx = 0;
 }
+
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+canvas.addEventListener('touchstart', handleTouchStart);
+canvas.addEventListener('touchmove', handleTouchMove);
+canvas.addEventListener('touchend', handleTouchEnd);
+
 loadImages();
 
 window.addEventListener('resize', () => {
