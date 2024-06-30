@@ -26,7 +26,6 @@ function loadImages() {
     coinImage = new Image();
     coinImage.src = 'assets/coin.png';
 
-    // Load magnet
     magnetImage = new Image();
     magnetImage.src = 'assets/magnet.png';
 
@@ -73,14 +72,14 @@ function init() {
     frame = 0;
     baseGameSpeed = 3;
     gameSpeed = baseGameSpeed;
+    magnetActive = false;
+    magnetTimer = 0;
     obstacleFrequency = 120;
     gameOver = false;
     paused = false;
     score = 0;
     distance = 0;
     level = 1;
-    magnetActive = false;
-    magnetTimer = 0;
 
     update();
 }
@@ -117,10 +116,10 @@ function createCoin() {
 
         if (isVertical) {
             for (let i = 0; i < 3; i++) {
-                coins.push({ x, y: y - i * size, size, isMagnet: false });
+                coins.push({ x, y: y - i * size, size });
             }
         } else {
-            coins.push({ x, y, size, isMagnet: false });
+            coins.push({ x, y, size });
         }
 
         // Check collision with obstacles
@@ -282,9 +281,8 @@ function updateLevel() {
     level = Math.floor(distance / 1000) + 1;
     obstacleFrequency = Math.max(120 - (level * 5), 60);
     baseGameSpeed = 3 + (level * 0.2);
-    gameSpeed = magnetActive ? baseGameSpeed * 1.5 : baseGameSpeed;
+    gameSpeed = magnetActive ? baseGameSpeed * 2 : baseGameSpeed;
 }
-
 function update() {
     if (gameOver) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -354,6 +352,7 @@ function update() {
     requestAnimationFrame(update);
 }
 
+
 function moveLeft() {
     player.dx = -player.speed;
 }
@@ -380,58 +379,48 @@ function keyUp(e) {
     }
 }
 
-function togglePause() {
-    paused = !paused;
-}
-
-// Touch controls
-let touchStartX = 0;
-let touchStartY = 0;
-let isTouching = false;
-
-function handleTouchStart(e) {
-    e.preventDefault();
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    isTouching = true;
-
-    // Check if touch is on pause button
+function togglePause(e) {
     const rect = canvas.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
     if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
-        togglePause();
-    } else {
-        jump();
+        paused = !paused;
+    } else if (gameOver && 
+               x > canvas.width / 2 - 60 && x < canvas.width / 2 + 60 &&
+               y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
+        init();
     }
 }
 
-function handleTouchMove(e) {
-    e.preventDefault();
-    if (!isTouching) return;
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+canvas.addEventListener('click', togglePause);
 
-    const touch = e.touches[0];
-    const diffX = touch.clientX - touchStartX;
+canvas.addEventListener('touchstart', handleTouch);
+canvas.addEventListener('touchend', handleTouchEnd);
+
+let touchStartX = 0;
+
+function handleTouch(e) {
+    e.preventDefault();
+    touchStartX = e.touches[0].clientX;
+    jump();
+}
+
+function handleTouchEnd(e) {
+    e.preventDefault();
+    const touchEndX = e.changedTouches[0].clientX;
+    const diffX = touchEndX - touchStartX;
 
     if (diffX > 50) {
         moveRight();
     } else if (diffX < -50) {
         moveLeft();
     }
-}
 
-function handleTouchEnd(e) {
-    e.preventDefault();
-    isTouching = false;
     player.dx = 0;
 }
-
-document.addEventListener('keydown', keyDown);
-document.addEventListener('keyup', keyUp);
-canvas.addEventListener('touchstart', handleTouchStart);
-canvas.addEventListener('touchmove', handleTouchMove);
-canvas.addEventListener('touchend', handleTouchEnd);
 
 loadImages();
 
