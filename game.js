@@ -204,13 +204,6 @@ function newPos() {
     else if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 }
 
-function jump() {
-    if (!player.isJumping) {
-        player.isJumping = true;
-        player.dy = player.jumpStrength;
-    }
-}
-
 function detectCollision() {
     const playerHitbox = {
         x: player.x + player.width * 0.2,
@@ -271,6 +264,10 @@ function update() {
         ctx.fillStyle = 'white';
         ctx.font = '20px Arial';
         ctx.fillText('Restart', canvas.width / 2 - 30, canvas.height / 2 + 45);
+
+        // Save the score when the game is over
+        const playerName = prompt('Enter your name:');
+        saveScore(playerName, score); // Fixed the saveScore call
         return;
     }
 
@@ -320,6 +317,7 @@ function update() {
 }
 
 
+
 function moveLeft() {
     player.dx = -player.speed;
 }
@@ -328,6 +326,12 @@ function moveRight() {
     player.dx = player.speed;
 }
 
+function jump() {
+    if (!player.isJumping) {
+        player.isJumping = true;
+        player.dy = player.jumpStrength;
+    }
+}
 function keyDown(e) {
     if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
     else if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
@@ -364,31 +368,58 @@ document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
 canvas.addEventListener('click', togglePause);
 
-canvas.addEventListener('touchstart', handleTouch);
+canvas.addEventListener('touchstart', handleTouchStart);
 canvas.addEventListener('touchend', handleTouchEnd);
 
 let touchStartX = 0;
+let touchStartY = 0;
 
-function handleTouch(e) {
+function handleTouchStart(e) {
     e.preventDefault();
     touchStartX = e.touches[0].clientX;
-    jump();
+    touchStartY = e.touches[0].clientY;
 }
 
 function handleTouchEnd(e) {
     e.preventDefault();
     const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
     const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
 
-    if (diffX > 50) {
-        moveRight();
-    } else if (diffX < -50) {
-        moveLeft();
+    const absDiffX = Math.abs(diffX);
+    const absDiffY = Math.abs(diffY);
+
+    if (absDiffX > absDiffY) {
+        // Horizontal swipe
+        if (diffX > 50) {
+            moveRight();
+        } else if (diffX < -50) {
+            moveLeft();
+        }
+    } else {
+        // Vertical swipe
+        if (diffY < -50) {
+            jump();
+        }
+    }
+
+    // Single tap for pausing the game
+    if (absDiffX < 10 && absDiffY < 10) {
+        const rect = canvas.getBoundingClientRect();
+        const x = touchStartX - rect.left;
+        const y = touchStartY - rect.top;
+        if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
+            paused = !paused;
+        } else if (gameOver && 
+                   x > canvas.width / 2 - 60 && x < canvas.width / 2 + 60 &&
+                   y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
+            init();
+        }
     }
 
     player.dx = 0;
 }
-
 loadImages();
 
 window.addEventListener('resize', () => {
