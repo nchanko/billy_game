@@ -276,13 +276,13 @@ function detectCollision() {
         return true;
     });
 }
-
 function updateLevel() {
     level = Math.floor(distance / 1000) + 1;
     obstacleFrequency = Math.max(120 - (level * 5), 60);
     baseGameSpeed = 3 + (level * 0.2);
     gameSpeed = magnetActive ? baseGameSpeed * 2 : baseGameSpeed;
 }
+
 function update() {
     if (gameOver) {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -292,11 +292,19 @@ function update() {
         ctx.fillText('Game Over', canvas.width / 2 - 70, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 80, canvas.height / 2);
         
+        // Restart button
         ctx.fillStyle = 'green';
-        ctx.fillRect(canvas.width / 2 - 60, canvas.height / 2 + 20, 120, 40);
+        ctx.fillRect(canvas.width / 2 - 100, canvas.height / 2 + 20, 90, 40);
         ctx.fillStyle = 'white';
         ctx.font = '20px Arial';
-        ctx.fillText('Restart', canvas.width / 2 - 30, canvas.height / 2 + 45);
+        ctx.fillText('Restart', canvas.width / 2 - 85, canvas.height / 2 + 45);
+        
+        // Exit button
+        ctx.fillStyle = 'red';
+        ctx.fillRect(canvas.width / 2 + 10, canvas.height / 2 + 20, 90, 40);
+        ctx.fillStyle = 'white';
+        ctx.fillText('Exit', canvas.width / 2 + 35, canvas.height / 2 + 45);
+        
         return;
     }
 
@@ -378,32 +386,45 @@ function keyUp(e) {
     }
 }
 
-function togglePause(e) {
+function togglePause() {
+    paused = !paused;
+}
+
+function restartGame() {
+    init();
+}
+
+function exitGame() {
+    // Implement exit game functionality here
+    console.log("Exiting game");
+    // For example: window.close(); or redirect to a menu page
+}
+
+function handleClick(e) {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
-        paused = !paused;
-    } else if (gameOver && 
-               x > canvas.width / 2 - 60 && x < canvas.width / 2 + 60 &&
-               y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
-        init();
+    if (gameOver) {
+        // Check if click is on Restart button
+        if (x > canvas.width / 2 - 100 && x < canvas.width / 2 - 10 &&
+            y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
+            restartGame();
+        }
+        // Check if click is on Exit button
+        else if (x > canvas.width / 2 + 10 && x < canvas.width / 2 + 100 &&
+                 y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
+            exitGame();
+        }
+    } else if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
+        togglePause();
     }
 }
 
-document.addEventListener('keydown', keyDown);
-document.addEventListener('keyup', keyUp);
-canvas.addEventListener('click', togglePause);
-
-canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-// Replace or update these functions
 let touchStartX = 0;
 let touchStartY = 0;
 let isTouching = false;
+let lastTapTime = 0;
 
 function handleTouchStart(e) {
     e.preventDefault();
@@ -412,15 +433,18 @@ function handleTouchStart(e) {
     touchStartY = touch.clientY;
     isTouching = true;
 
-    // Check if touch is on pause button
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+    
+    // Check for double tap on pause button
     const rect = canvas.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
-    if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
+    if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60 && tapLength < 300) {
         togglePause();
-    } else {
-        jump();
     }
+    
+    lastTapTime = currentTime;
 }
 
 function handleTouchMove(e) {
@@ -429,8 +453,11 @@ function handleTouchMove(e) {
 
     const touch = e.touches[0];
     const diffX = touch.clientX - touchStartX;
+    const diffY = touchStartY - touch.clientY;  // Note: Y is inverted
 
-    if (diffX > 50) {
+    if (diffY > 50) {  // Swipe up
+        jump();
+    } else if (diffX > 50) {
         moveRight();
     } else if (diffX < -50) {
         moveLeft();
@@ -442,6 +469,14 @@ function handleTouchEnd(e) {
     isTouching = false;
     player.dx = 0;
 }
+
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+canvas.addEventListener('click', handleClick);
+
 loadImages();
 
 window.addEventListener('resize', () => {
