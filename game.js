@@ -54,7 +54,7 @@ function init() {
 
     player = {
         x: canvas.width / 2 - 55,
-        y: canvas.height - 150,
+        y: canvas.height - 200,
         width: 110,
         height: 150,
         speed: 5,
@@ -420,7 +420,6 @@ function handleClick(e) {
         togglePause();
     }
 }
-
 let touchStartX = 0;
 let touchStartY = 0;
 let isTouching = false;
@@ -435,7 +434,7 @@ function handleTouchStart(e) {
 
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTapTime;
-    
+
     // Check for double tap on pause button
     const rect = canvas.getBoundingClientRect();
     const x = touch.clientX - rect.left;
@@ -443,7 +442,7 @@ function handleTouchStart(e) {
     if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60 && tapLength < 300) {
         togglePause();
     }
-    
+
     lastTapTime = currentTime;
 }
 
@@ -455,12 +454,16 @@ function handleTouchMove(e) {
     const diffX = touch.clientX - touchStartX;
     const diffY = touchStartY - touch.clientY;  // Note: Y is inverted
 
-    if (diffY > 50) {  // Swipe up
-        jump();
-    } else if (diffX > 50) {
-        moveRight();
-    } else if (diffX < -50) {
-        moveLeft();
+    if (Math.abs(diffY) > Math.abs(diffX)) {
+        if (diffY > 50) {  // Swipe up
+            jump();
+        }
+    } else {
+        if (diffX > 50) {
+            moveRight();
+        } else if (diffX < -50) {
+            moveLeft();
+        }
     }
 }
 
@@ -470,11 +473,14 @@ function handleTouchEnd(e) {
     player.dx = 0;
 }
 
+
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
+
 canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
 canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
 canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
 canvas.addEventListener('click', handleClick);
 
 loadImages();
