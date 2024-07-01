@@ -401,9 +401,10 @@ function exitGame() {
 }
 
 function handleClick(e) {
+    e.preventDefault();
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX || e.touches[0].clientX - rect.left;
-    const y = e.clientY || e.touches[0].clientY - rect.top;
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
     if (gameOver) {
         // Check if click/touch is on Restart button
@@ -420,6 +421,7 @@ function handleClick(e) {
         togglePause();
     }
 }
+
 let touchStartX = 0;
 let touchStartY = 0;
 let isTouching = false;
@@ -444,6 +446,9 @@ function handleTouchStart(e) {
     }
 
     lastTapTime = currentTime;
+
+    // Handle click events for game over screen
+    handleClick(e);
 }
 
 function handleTouchMove(e) {
@@ -475,23 +480,11 @@ function handleTouchEnd(e) {
 }
 
 
-function restartGame() {
-    gameOver = false;
-    init();
-}
-
-function exitGame() {
-    // Implement exit game functionality here
-    console.log("Exiting game");
-    // For example: redirect to a menu page
-    window.location.href = 'menu.html';
-}
-
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
 
 canvas.addEventListener('click', handleClick);
-canvas.addEventListener('touchstart', handleClick);
+canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
 canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
 canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
