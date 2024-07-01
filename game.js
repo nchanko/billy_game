@@ -63,8 +63,8 @@ function init() {
         jumpStrength: -20,
         gravity: 0.8,
         isJumping: false,
-        jumpHeight: 200,
-        groundY: canvas.height - 150
+        jumpHeight: 600,
+        groundY: canvas.height - 200
     };
 
     obstacles = [];
@@ -402,16 +402,16 @@ function exitGame() {
 
 function handleClick(e) {
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = e.clientX || e.touches[0].clientX - rect.left;
+    const y = e.clientY || e.touches[0].clientY - rect.top;
 
     if (gameOver) {
-        // Check if click is on Restart button
+        // Check if click/touch is on Restart button
         if (x > canvas.width / 2 - 100 && x < canvas.width / 2 - 10 &&
             y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
             restartGame();
         }
-        // Check if click is on Exit button
+        // Check if click/touch is on Exit button
         else if (x > canvas.width / 2 + 10 && x < canvas.width / 2 + 100 &&
                  y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
             exitGame();
@@ -454,17 +454,18 @@ function handleTouchMove(e) {
     const diffX = touch.clientX - touchStartX;
     const diffY = touchStartY - touch.clientY;  // Note: Y is inverted
 
-    if (Math.abs(diffY) > Math.abs(diffX)) {
-        if (diffY > 50) {  // Swipe up
-            jump();
-        }
-    } else {
-        if (diffX > 50) {
+    if (Math.abs(diffY) > 30) {  // Reduced threshold for jump
+        jump();
+    } else if (Math.abs(diffX) > 10) {  // Reduced threshold for left/right movement
+        if (diffX > 0) {
             moveRight();
-        } else if (diffX < -50) {
+        } else {
             moveLeft();
         }
     }
+    
+    // Update touchStartX for continuous movement
+    touchStartX = touch.clientX;
 }
 
 function handleTouchEnd(e) {
@@ -474,14 +475,25 @@ function handleTouchEnd(e) {
 }
 
 
+function restartGame() {
+    gameOver = false;
+    init();
+}
+
+function exitGame() {
+    // Implement exit game functionality here
+    console.log("Exiting game");
+    // For example: redirect to a menu page
+    window.location.href = 'menu.html';
+}
+
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
 
-canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+canvas.addEventListener('click', handleClick);
+canvas.addEventListener('touchstart', handleClick);
 canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
 canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-canvas.addEventListener('click', handleClick);
 
 loadImages();
 
