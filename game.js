@@ -64,7 +64,7 @@ function init() {
         gravity: 0.8,
         isJumping: false,
         jumpHeight: 600,
-        groundY: canvas.height - 250
+        groundY: canvas.height - 200
     };
 
     obstacles = [];
