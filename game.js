@@ -11,7 +11,7 @@ let baseGameSpeed = 3;
 
 function loadImages() {
     // Load background layers
-    const backgroundSources = ['assets/summer.png', 'assets/spring.png', 'assets/snow.png','assets/rain.png','assets/city.png','assets/oriental.png','assets/desert.png'];
+    const backgroundSources = ['assets/summer.png', 'assets/spring.png', 'assets/snow.png','assets/rain.png','assets/desert.png','assets/city.png','assets/oriental.png'];
     backgroundSources.forEach((src, index) => {
         const img = new Image();
         img.src = src;
@@ -64,7 +64,7 @@ function init() {
         gravity: 0.8,
         isJumping: false,
         jumpHeight: 600,
-        groundY: canvas.height - 200,
+        groundY: canvas.height - 250
     };
 
     obstacles = [];
@@ -191,7 +191,7 @@ function drawCoins() {
 
 function drawScore() {
     ctx.fillStyle = 'white';
-    ctx.font = '25px Matemasie';
+    ctx.font = '20px Arial';
     ctx.fillText(`Score: ${score}  Distance: ${Math.floor(distance)}m  Level: ${level}`, 10, 30);
 }
 
@@ -200,7 +200,7 @@ function drawHamburgerMenu() {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.fillRect(canvas.width - 60, 10, 50, 50);
     ctx.fillStyle = 'black';
-    ctx.font = '30px Matemasie';
+    ctx.font = '30px Arial';
     ctx.fillText('☰', canvas.width - 50, 45);
 
     if (paused) {
@@ -209,7 +209,7 @@ function drawHamburgerMenu() {
         ctx.fillRect(canvas.width - 200, 60, 190, 170);
         
         ctx.fillStyle = 'white';
-        ctx.font = '20px Matemasie';
+        ctx.font = '20px Arial';
         ctx.fillText('Resume', canvas.width - 180, 90);
         ctx.fillText('Go to Home', canvas.width - 180, 130);
         ctx.fillText('Disable Game', canvas.width - 180, 170);
@@ -221,6 +221,7 @@ function drawHamburgerMenu() {
 function clear() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
+
 function newPos() {
     player.x += player.dx;
 
@@ -243,8 +244,6 @@ function newPos() {
     if (player.x < 0) player.x = 0;
     else if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 }
-
-
 
 function jump() {
     if (!player.isJumping) {
@@ -304,23 +303,23 @@ function update() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
-        ctx.font = '30px Matemasie';
+        ctx.font = '30px Arial';
         ctx.fillText('Game Over', canvas.width / 2 - 70, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 80, canvas.height / 2);
-        
+
         // Restart button
         ctx.fillStyle = 'green';
         ctx.fillRect(canvas.width / 2 - 100, canvas.height / 2 + 20, 90, 40);
         ctx.fillStyle = 'white';
-        ctx.font = '20px Matemasie';
+        ctx.font = '20px Arial';
         ctx.fillText('Restart', canvas.width / 2 - 85, canvas.height / 2 + 45);
-        
+
         // Exit button
         ctx.fillStyle = 'red';
         ctx.fillRect(canvas.width / 2 + 10, canvas.height / 2 + 20, 90, 40);
         ctx.fillStyle = 'white';
         ctx.fillText('Exit', canvas.width / 2 + 35, canvas.height / 2 + 45);
-        
+
         return;
     }
 
@@ -376,6 +375,7 @@ function update() {
     requestAnimationFrame(update);
 }
 
+
 function moveLeft() {
     player.dx = -player.speed;
 }
@@ -384,29 +384,23 @@ function moveRight() {
     player.dx = player.speed;
 }
 
-function moveUp() {
-    player.dy = -player.speed;
-}
-
-function moveDown() {
-    player.dy = player.speed;
-}
-
 function keyDown(e) {
     if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
     else if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
-    else if (e.key === ' ' || e.key === 'w') jump(); // Keep jump with space or 'w'
+    else if (e.key === ' ' || e.key === 'w') jump();
 }
 
 function keyUp(e) {
     if (
         e.key === 'ArrowRight' || e.key === 'd' ||
-        e.key === 'ArrowLeft' || e.key === 'a'
+        e.key === 'ArrowLeft' || e.key === 'a' ||
+        e.key === 'ArrowUp' || e.key === 'w' ||
+        e.key === 'ArrowDown' || e.key === 's'
     ) {
         player.dx = 0;
+        player.dy = 0;
     }
 }
-
 
 function togglePause() {
     paused = !paused;
@@ -421,12 +415,14 @@ function exitGame() {
     console.log("Exiting game");
     // For example: window.close(); or redirect to a menu page
 }
+
 function disableGame() {
     // Implement your logic to disable the game
     console.log('Game disabled');
     paused = true;
     gameOver = true;
 }
+
 
 function handleClick(e) {
     e.preventDefault();
@@ -493,26 +489,28 @@ function handleTouchStart(e) {
     // Handle click events for game over screen
     handleClick(e);
 }
+
 function handleTouchMove(e) {
     e.preventDefault();
     if (!isTouching) return;
 
     const touch = e.touches[0];
     const diffX = touch.clientX - touchStartX;
+    const diffY = touchStartY - touch.clientY;  // Note: Y is inverted
 
-    if (Math.abs(diffX) > 10) {  // Left/right movement
+    if (Math.abs(diffY) > 35) {  // Reduced threshold for jump
+        jump();
+    } else if (Math.abs(diffX) > 5) {  // Reduced threshold for left/right movement
         if (diffX > 0) {
             moveRight();
         } else {
             moveLeft();
         }
     }
-
+    
     // Update touchStartX for continuous movement
     touchStartX = touch.clientX;
 }
-
-
 
 function handleTouchEnd(e) {
     e.preventDefault();
