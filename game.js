@@ -498,9 +498,9 @@ function handleTouchMove(e) {
     const diffX = touch.clientX - touchStartX;
     const diffY = touchStartY - touch.clientY;  // Note: Y is inverted
 
-    if (Math.abs(diffY) > 35) {  // Reduced threshold for jump
+    if (Math.abs(diffY) > 40) {  // Reduced threshold for jump, increase to avoid accidental jump
         jump();
-    } else if (Math.abs(diffX) > 5) {  // Reduced threshold for left/right movement
+    } else if (Math.abs(diffX) > 3) {  // Reduced threshold for faster left/right movement
         if (diffX > 0) {
             moveRight();
         } else {
