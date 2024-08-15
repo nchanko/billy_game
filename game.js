@@ -11,7 +11,7 @@ let baseGameSpeed = 3;
 
 function loadImages() {
     // Load background layers
-    const backgroundSources = ['assets/summer.png', 'assets/spring.png', 'assets/snow.png','assets/rain.png'];
+    const backgroundSources = ['assets/summer.png', 'assets/spring.png', 'assets/snow.png','assets/rain.png','assets/city.png','assets/oriental.png','assets/desert.png'];
     backgroundSources.forEach((src, index) => {
         const img = new Image();
         img.src = src;
@@ -20,7 +20,7 @@ function loadImages() {
 
     // Load character
     character = new Image();
-    character.src = 'assets/running_koala.png';
+    character.src = 'assets/billy.png';
 
     // Load coin
     coinImage = new Image();
@@ -64,7 +64,9 @@ function init() {
         gravity: 0.8,
         isJumping: false,
         jumpHeight: 600,
-        groundY: canvas.height - 200
+        groundY: canvas.height - 200,
+        maxY: canvas.height - 200, // The lowest the player can go
+        minY: 100,   
     };
 
     obstacles = [];
@@ -191,24 +193,42 @@ function drawCoins() {
 
 function drawScore() {
     ctx.fillStyle = 'white';
-    ctx.font = '20px Arial';
+    ctx.font = '25px Matemasie';
     ctx.fillText(`Score: ${score}  Distance: ${Math.floor(distance)}m  Level: ${level}`, 10, 30);
 }
 
-function drawPauseButton() {
+function drawHamburgerMenu() {
+    // Draw the hamburger icon
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.fillRect(canvas.width - 60, 10, 50, 50);
     ctx.fillStyle = 'black';
-    ctx.font = '30px Arial';
-    ctx.fillText(paused ? '▶' : '❚❚', canvas.width - 50, 45);
+    ctx.font = '30px Matemasie';
+    ctx.fillText('☰', canvas.width - 50, 45);
+
+    if (paused) {
+        // Draw the menu if paused (menu is open)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(canvas.width - 200, 60, 190, 170);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = '20px Matemasie';
+        ctx.fillText('Resume', canvas.width - 180, 90);
+        ctx.fillText('Go to Home', canvas.width - 180, 130);
+        ctx.fillText('Disable Game', canvas.width - 180, 170);
+        ctx.fillText('Exit', canvas.width - 180, 210);
+    }
 }
+
 
 function clear() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
-
 function newPos() {
     player.x += player.dx;
+    player.y += player.dy;
+
+    if (player.y < player.minY) player.y = player.minY;
+    if (player.y > player.maxY) player.y = player.maxY;
 
     if (player.isJumping) {
         player.y += player.dy;
@@ -229,6 +249,7 @@ function newPos() {
     if (player.x < 0) player.x = 0;
     else if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 }
+
 
 function jump() {
     if (!player.isJumping) {
@@ -288,7 +309,7 @@ function update() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
-        ctx.font = '30px Arial';
+        ctx.font = '30px Matemasie';
         ctx.fillText('Game Over', canvas.width / 2 - 70, canvas.height / 2 - 50);
         ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 80, canvas.height / 2);
         
@@ -296,7 +317,7 @@ function update() {
         ctx.fillStyle = 'green';
         ctx.fillRect(canvas.width / 2 - 100, canvas.height / 2 + 20, 90, 40);
         ctx.fillStyle = 'white';
-        ctx.font = '20px Arial';
+        ctx.font = '20px Matemasie';
         ctx.fillText('Restart', canvas.width / 2 - 85, canvas.height / 2 + 45);
         
         // Exit button
@@ -356,7 +377,7 @@ function update() {
         drawScore();
     }
 
-    drawPauseButton();
+    drawHamburgerMenu();
     requestAnimationFrame(update);
 }
 
@@ -368,23 +389,39 @@ function moveRight() {
     player.dx = player.speed;
 }
 
+function moveUp() {
+    player.dy = -player.speed;
+}
+
+function moveDown() {
+    player.dy = player.speed;
+}
+
+
 function keyDown(e) {
     if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
     else if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
-    else if (e.key === ' ' || e.key === 'w') jump();
+    else if (e.key === 'ArrowUp' || e.key === 'w') moveUp();
+    else if (e.key === 'ArrowDown' || e.key === 's') moveDown();
+    else if (e.key === ' ') jump();
 }
 
 function keyUp(e) {
     if (
         e.key === 'ArrowRight' || e.key === 'd' ||
-        e.key === 'ArrowLeft' || e.key === 'a' ||
+        e.key === 'ArrowLeft' || e.key === 'a'
+    ) {
+        player.dx = 0;
+    }
+
+    if (
         e.key === 'ArrowUp' || e.key === 'w' ||
         e.key === 'ArrowDown' || e.key === 's'
     ) {
-        player.dx = 0;
         player.dy = 0;
     }
 }
+
 
 function togglePause() {
     paused = !paused;
@@ -399,6 +436,12 @@ function exitGame() {
     console.log("Exiting game");
     // For example: window.close(); or redirect to a menu page
 }
+function disableGame() {
+    // Implement your logic to disable the game
+    console.log('Game disabled');
+    paused = true;
+    gameOver = true;
+}
 
 function handleClick(e) {
     e.preventDefault();
@@ -407,20 +450,35 @@ function handleClick(e) {
     const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
     if (gameOver) {
-        // Check if click/touch is on Restart button
+        // Check if click/touch is on Restart or Exit button
         if (x > canvas.width / 2 - 100 && x < canvas.width / 2 - 10 &&
             y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
             restartGame();
-        }
-        // Check if click/touch is on Exit button
-        else if (x > canvas.width / 2 + 10 && x < canvas.width / 2 + 100 &&
-                 y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
+        } else if (x > canvas.width / 2 + 10 && x < canvas.width / 2 + 100 &&
+                   y > canvas.height / 2 + 20 && y < canvas.height / 2 + 60) {
             exitGame();
         }
-    } else if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
-        togglePause();
+    } else {
+        // Check if click/touch is on Hamburger button
+        if (x > canvas.width - 60 && x < canvas.width - 10 && y > 10 && y < 60) {
+            paused = !paused;
+        } else if (paused) {
+            // Handle menu options if the menu is open
+            if (x > canvas.width - 200 && x < canvas.width - 10) {
+                if (y > 60 && y < 90) {
+                    paused = false; // Resume game
+                } else if (y > 90 && y < 130) {
+                    window.location.href = 'home_page_url'; // Replace with your home page URL
+                } else if (y > 130 && y < 170) {
+                    exitGame();
+                } else if (y > 170 && y < 210) {
+                    disableGame();
+                }
+            }
+        }
     }
 }
+
 
 let touchStartX = 0;
 let touchStartY = 0;
@@ -459,19 +517,25 @@ function handleTouchMove(e) {
     const diffX = touch.clientX - touchStartX;
     const diffY = touchStartY - touch.clientY;  // Note: Y is inverted
 
-    if (Math.abs(diffY) > 30) {  // Reduced threshold for jump
-        jump();
-    } else if (Math.abs(diffX) > 10) {  // Reduced threshold for left/right movement
+    if (Math.abs(diffY) > 30) {  // Adjust threshold for up/down movement
+        if (diffY > 0) {
+            moveUp();
+        } else {
+            moveDown();
+        }
+    } else if (Math.abs(diffX) > 10) {  // Left/right movement
         if (diffX > 0) {
             moveRight();
         } else {
             moveLeft();
         }
     }
-    
-    // Update touchStartX for continuous movement
+
+    // Update touchStartX and touchStartY for continuous movement
     touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
 }
+
 
 function handleTouchEnd(e) {
     e.preventDefault();
