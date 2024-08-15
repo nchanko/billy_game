@@ -65,8 +65,6 @@ function init() {
         isJumping: false,
         jumpHeight: 600,
         groundY: canvas.height - 200,
-        maxY: canvas.height - 200, // The lowest the player can go
-        minY: 100,   
     };
 
     obstacles = [];
@@ -225,10 +223,6 @@ function clear() {
 }
 function newPos() {
     player.x += player.dx;
-    player.y += player.dy;
-
-    if (player.y < player.minY) player.y = player.minY;
-    if (player.y > player.maxY) player.y = player.maxY;
 
     if (player.isJumping) {
         player.y += player.dy;
@@ -249,6 +243,7 @@ function newPos() {
     if (player.x < 0) player.x = 0;
     else if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 }
+
 
 
 function jump() {
@@ -397,13 +392,10 @@ function moveDown() {
     player.dy = player.speed;
 }
 
-
 function keyDown(e) {
     if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
     else if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
-    else if (e.key === 'ArrowUp' || e.key === 'w') moveUp();
-    else if (e.key === 'ArrowDown' || e.key === 's') moveDown();
-    else if (e.key === ' ') jump();
+    else if (e.key === ' ' || e.key === 'w') jump(); // Keep jump with space or 'w'
 }
 
 function keyUp(e) {
@@ -412,13 +404,6 @@ function keyUp(e) {
         e.key === 'ArrowLeft' || e.key === 'a'
     ) {
         player.dx = 0;
-    }
-
-    if (
-        e.key === 'ArrowUp' || e.key === 'w' ||
-        e.key === 'ArrowDown' || e.key === 's'
-    ) {
-        player.dy = 0;
     }
 }
 
@@ -508,22 +493,14 @@ function handleTouchStart(e) {
     // Handle click events for game over screen
     handleClick(e);
 }
-
 function handleTouchMove(e) {
     e.preventDefault();
     if (!isTouching) return;
 
     const touch = e.touches[0];
     const diffX = touch.clientX - touchStartX;
-    const diffY = touchStartY - touch.clientY;  // Note: Y is inverted
 
-    if (Math.abs(diffY) > 30) {  // Adjust threshold for up/down movement
-        if (diffY > 0) {
-            moveUp();
-        } else {
-            moveDown();
-        }
-    } else if (Math.abs(diffX) > 10) {  // Left/right movement
+    if (Math.abs(diffX) > 10) {  // Left/right movement
         if (diffX > 0) {
             moveRight();
         } else {
@@ -531,10 +508,10 @@ function handleTouchMove(e) {
         }
     }
 
-    // Update touchStartX and touchStartY for continuous movement
+    // Update touchStartX for continuous movement
     touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
 }
+
 
 
 function handleTouchEnd(e) {
