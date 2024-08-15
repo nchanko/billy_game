@@ -55,18 +55,17 @@ function init() {
     player = {
         x: canvas.width / 2 - 55,
         y: canvas.height - 200,
-        width: 110,
-        height: 150,
+        width: 100,
+        height: 130,
         speed: 5,
         dx: 0,
         dy: 0,
         jumpStrength: -20,
         gravity: 0.8,
         isJumping: false,
-        jumpHeight: 600,
+        jumpHeight: 500,
         groundY: canvas.height - 200
     };
-
     obstacles = [];
     coins = [];
     frame = 0;
@@ -500,7 +499,7 @@ function handleTouchMove(e) {
 
     if (Math.abs(diffY) > 40) {  // Reduced threshold for jump, increase to avoid accidental jump
         jump();
-    } else if (Math.abs(diffX) > 3) {  // Reduced threshold for faster left/right movement
+    } else if (Math.abs(diffX) > 2) {  // Reduced threshold for faster left/right movement
         if (diffX > 0) {
             moveRight();
         } else {
